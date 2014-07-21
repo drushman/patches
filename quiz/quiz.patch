@@ -1,0 +1,1505 @@
+diff --git a/includes/views/defaults/questions_by_quiz.view.inc b/includes/views/defaults/questions_by_quiz.view.inc
+new file mode 100644
+index 0000000..d97a895
+--- /dev/null
++++ b/includes/views/defaults/questions_by_quiz.view.inc
+@@ -0,0 +1,292 @@
++<?php
++$view = new view;
++$view->name = 'questions_by_quiz';
++$view->description = 'View of all the questions associated with a quiz';
++$view->tag = 'quiz';
++$view->view_php = '';
++$view->base_table = 'quiz_node_properties';
++$view->is_cacheable = FALSE;
++$view->api_version = 2;
++$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
++$handler = $view->new_display('default', 'Defaults', 'default');
++$handler->override_option('relationships', array(
++  'parent_vid' => array(
++    'label' => 'node',
++    'required' => 1,
++    'id' => 'parent_vid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'parent_vid',
++    'relationship' => 'none',
++  ),
++  'child_vid' => array(
++    'label' => 'question node revision',
++    'required' => 0,
++    'id' => 'child_vid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'child_vid',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('fields', array(
++  'child_nid' => array(
++    'label' => 'Question Node ID',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'set_precision' => FALSE,
++    'precision' => 0,
++    'decimal' => '.',
++    'separator' => '',
++    'prefix' => '',
++    'suffix' => '',
++    'exclude' => 1,
++    'id' => 'child_nid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'child_nid',
++    'relationship' => 'none',
++  ),
++  'title' => array(
++    'label' => 'Question Title',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 1,
++      'path' => 'node/[child_nid]',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'link_to_node' => 1,
++    'exclude' => 0,
++    'id' => 'title',
++    'table' => 'node_revision',
++    'field' => 'title',
++    'relationship' => 'child_vid',
++  ),
++  'type' => array(
++    'label' => 'Question Type',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'link_to_node' => 0,
++    'exclude' => 0,
++    'id' => 'type',
++    'table' => 'node',
++    'field' => 'type',
++    'relationship' => 'child_vid',
++  ),
++  'question_status' => array(
++    'label' => 'Question Status',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'type' => 'yes-no',
++    'not' => 0,
++    'exclude' => 0,
++    'id' => 'question_status',
++    'table' => 'quiz_node_relationship',
++    'field' => 'question_status',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('arguments', array(
++  'nid' => array(
++    'default_action' => 'not found',
++    'style_plugin' => 'default_summary',
++    'style_options' => array(),
++    'wildcard' => 'all',
++    'wildcard_substitution' => 'All',
++    'title' => 'Questions',
++    'breadcrumb' => '',
++    'default_argument_type' => 'fixed',
++    'default_argument' => '',
++    'validate_type' => 'node',
++    'validate_fail' => 'not found',
++    'break_phrase' => 0,
++    'not' => 0,
++    'which_vid' => 'latest',
++    'id' => 'nid',
++    'table' => 'quiz_node_properties',
++    'field' => 'nid',
++    'validate_user_argument_type' => 'uid',
++    'validate_user_roles' => array(
++      '2' => 0,
++      '3' => 0,
++    ),
++    'relationship' => 'none',
++    'default_options_div_prefix' => '',
++    'default_argument_user' => 0,
++    'default_argument_fixed' => '',
++    'default_argument_php' => '',
++    'validate_argument_node_type' => array(
++      'quiz' => 'quiz',
++      'certificate' => 0,
++      'long_answer' => 0,
++      'matching' => 0,
++      'multichoice' => 0,
++      'quiz_directions' => 0,
++      'scale' => 0,
++      'short_answer' => 0,
++      'truefalse' => 0,
++      'page' => 0,
++      'story' => 0,
++    ),
++    'validate_argument_node_access' => 0,
++    'validate_argument_nid_type' => 'nid',
++    'validate_argument_vocabulary' => array(),
++    'validate_argument_type' => 'tid',
++    'validate_argument_transform' => 0,
++    'validate_user_restrict_roles' => 0,
++    'validate_argument_php' => '',
++  ),
++));
++$handler->override_option('access', array(
++  'type' => 'none',
++));
++$handler->override_option('cache', array(
++  'type' => 'none',
++));
++$handler->override_option('use_ajax', TRUE);
++$handler->override_option('use_pager', 'mini');
++$handler->override_option('style_plugin', 'table');
++$handler->override_option('style_options', array(
++  'grouping' => 'parent_vid',
++  'override' => 1,
++  'sticky' => 0,
++  'order' => 'asc',
++  'columns' => array(
++    'timestamp' => 'parent_nid',
++    'title' => 'title',
++    'type' => 'type',
++    'child_nid' => 'child_nid',
++    'child_vid' => 'child_vid',
++    'question_status' => 'question_status',
++    'parent_nid' => 'timestamp',
++    'parent_vid' => 'parent_vid',
++  ),
++  'info' => array(
++    'timestamp' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'title' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'type' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'child_nid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'child_vid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'question_status' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'parent_nid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'parent_vid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++  ),
++  'default' => 'title',
++));
++$handler = $view->new_display('page', 'Questions by Specific Quiz', 'page_1');
++$handler->override_option('path', 'admin/quiz/questions_by_quiz/%');
++$handler->override_option('menu', array(
++  'type' => 'none',
++  'title' => 'Questions by Quiz',
++  'description' => '',
++  'weight' => '0',
++  'name' => 'navigation',
++));
++$handler->override_option('tab_options', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++));
++$handler = $view->new_display('page', 'Page', 'page_2');
++$handler->override_option('path', 'admin/quiz/%/questions');
++$handler->override_option('menu', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++  'name' => 'navigation',
++));
++$handler->override_option('tab_options', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++));
+diff --git a/includes/views/defaults/questions_by_quiz_version.view.inc b/includes/views/defaults/questions_by_quiz_version.view.inc
+new file mode 100644
+index 0000000..497d678
+--- /dev/null
++++ b/includes/views/defaults/questions_by_quiz_version.view.inc
+@@ -0,0 +1,401 @@
++<?php
++$view = new view;
++$view->name = 'questions_by_quiz_version';
++$view->description = 'View of all the questions associated with a particular revision of a quiz';
++$view->tag = 'quiz';
++$view->view_php = '';
++$view->base_table = 'quiz_node_properties';
++$view->is_cacheable = FALSE;
++$view->api_version = 2;
++$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
++$handler = $view->new_display('default', 'Defaults', 'default');
++$handler->override_option('relationships', array(
++  'parent_vid' => array(
++    'label' => 'node',
++    'required' => 1,
++    'id' => 'parent_vid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'parent_vid',
++    'relationship' => 'none',
++  ),
++  'child_vid' => array(
++    'label' => 'question node revision',
++    'required' => 0,
++    'id' => 'child_vid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'child_vid',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('fields', array(
++  'parent_nid' => array(
++    'label' => 'Quiz Node ID',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'set_precision' => FALSE,
++    'precision' => 0,
++    'decimal' => '.',
++    'separator' => '',
++    'prefix' => '',
++    'suffix' => '',
++    'exclude' => 0,
++    'id' => 'parent_nid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'parent_nid',
++    'relationship' => 'none',
++  ),
++  'parent_vid' => array(
++    'label' => 'Quiz Node VID',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'set_precision' => FALSE,
++    'precision' => 0,
++    'decimal' => '.',
++    'separator' => '',
++    'prefix' => '',
++    'suffix' => '',
++    'exclude' => 0,
++    'id' => 'parent_vid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'parent_vid',
++    'relationship' => 'none',
++  ),
++  'timestamp' => array(
++    'label' => 'Quiz Created',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'date_format' => 'small',
++    'custom_date_format' => '',
++    'exclude' => 0,
++    'id' => 'timestamp',
++    'table' => 'node_revision',
++    'field' => 'timestamp',
++    'relationship' => 'parent_vid',
++  ),
++  'title' => array(
++    'label' => 'Question Title',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'link_to_node' => 1,
++    'exclude' => 0,
++    'id' => 'title',
++    'table' => 'node_revision',
++    'field' => 'title',
++    'relationship' => 'child_vid',
++  ),
++  'type' => array(
++    'label' => 'Question Type',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'link_to_node' => 0,
++    'exclude' => 0,
++    'id' => 'type',
++    'table' => 'node',
++    'field' => 'type',
++    'relationship' => 'child_vid',
++  ),
++  'child_nid' => array(
++    'label' => 'Question Node ID',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'set_precision' => FALSE,
++    'precision' => 0,
++    'decimal' => '.',
++    'separator' => '',
++    'prefix' => '',
++    'suffix' => '',
++    'exclude' => 0,
++    'id' => 'child_nid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'child_nid',
++    'relationship' => 'none',
++  ),
++  'child_vid' => array(
++    'label' => 'Question Node VID',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'link_class' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'target' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'empty' => '',
++    'hide_empty' => 0,
++    'empty_zero' => 0,
++    'set_precision' => FALSE,
++    'precision' => 0,
++    'decimal' => '.',
++    'separator' => '',
++    'prefix' => '',
++    'suffix' => '',
++    'exclude' => 0,
++    'id' => 'child_vid',
++    'table' => 'quiz_node_relationship',
++    'field' => 'child_vid',
++    'relationship' => 'none',
++  ),
++  'question_status' => array(
++    'label' => 'Question Status',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'type' => 'yes-no',
++    'not' => 0,
++    'exclude' => 0,
++    'id' => 'question_status',
++    'table' => 'quiz_node_relationship',
++    'field' => 'question_status',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('arguments', array(
++  'vid' => array(
++    'default_action' => 'ignore',
++    'style_plugin' => 'default_summary',
++    'style_options' => array(),
++    'wildcard' => 'all',
++    'wildcard_substitution' => 'All',
++    'title' => 'Questions on Quiz \'%1\'',
++    'default_argument_type' => 'fixed',
++    'default_argument' => '',
++    'validate_type' => 'none',
++    'validate_fail' => 'not found',
++    'break_phrase' => 0,
++    'not' => 0,
++    'id' => 'vid',
++    'table' => 'quiz_node_properties',
++    'field' => 'vid',
++    'relationship' => 'none',
++    'default_options_div_prefix' => '',
++    'default_argument_user' => 0,
++    'default_argument_fixed' => '',
++    'default_argument_php' => '',
++    'validate_argument_node_type' => array(
++      'long_answer' => 0,
++      'multichoice' => 0,
++      'quiz' => 0,
++      'true_false' => 0,
++      'page' => 0,
++      'story' => 0,
++    ),
++    'validate_argument_node_access' => 0,
++    'validate_argument_nid_type' => 'nid',
++    'validate_argument_vocabulary' => array(),
++    'validate_argument_type' => 'tid',
++    'user_argument_type' => '',
++    'restrict_user_roles' => 0,
++    'user_roles' => array(),
++    'validate_argument_php' => '',
++  ),
++));
++$handler->override_option('access', array(
++  'type' => 'none',
++));
++$handler->override_option('cache', array(
++  'type' => 'none',
++));
++$handler->override_option('use_ajax', TRUE);
++$handler->override_option('style_plugin', 'table');
++$handler->override_option('style_options', array(
++  'grouping' => 'parent_vid',
++  'override' => 1,
++  'sticky' => 0,
++  'order' => 'asc',
++  'columns' => array(
++    'timestamp' => 'parent_nid',
++    'title' => 'title',
++    'type' => 'type',
++    'child_nid' => 'child_nid',
++    'child_vid' => 'child_vid',
++    'question_status' => 'question_status',
++    'parent_nid' => 'timestamp',
++    'parent_vid' => 'parent_vid',
++  ),
++  'info' => array(
++    'timestamp' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'title' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'type' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'child_nid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'child_vid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'question_status' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'parent_nid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'parent_vid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++  ),
++  'default' => 'title',
++));
++$handler = $view->new_display('page', 'Questions by Specific Quiz', 'page_1');
++$handler->override_option('path', 'admin/quiz/questions_by_quiz/%');
++$handler->override_option('menu', array(
++  'type' => 'none',
++  'title' => 'Questions by Quiz',
++  'description' => '',
++  'weight' => '0',
++  'name' => 'navigation',
++));
++$handler->override_option('tab_options', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++));
+diff --git a/includes/views/defaults/quiz_by_author.view.inc b/includes/views/defaults/quiz_by_author.view.inc
+new file mode 100644
+index 0000000..1778be5
+--- /dev/null
++++ b/includes/views/defaults/quiz_by_author.view.inc
+@@ -0,0 +1,267 @@
++<?php
++
++$view = new view;
++$view->name = 'quiz_by_author';
++$view->description = 'View of all the quizzes owned by a particular user (\'author\').';
++$view->tag = 'quiz';
++$view->view_php = '';
++$view->base_table = 'quiz_node_properties';
++$view->is_cacheable = FALSE;
++$view->api_version = 2;
++$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
++$handler = $view->new_display('default', 'Defaults', 'default');
++$handler->override_option('relationships', array(
++  'nid' => array(
++    'label' => 'node',
++    'required' => 1,
++    'id' => 'nid',
++    'table' => 'quiz_node_properties',
++    'field' => 'nid',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('fields', array(
++  'nid' => array(
++    'label' => 'Quiz Node NID',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'exclude' => 0,
++    'id' => 'nid',
++    'table' => 'quiz_node_properties',
++    'field' => 'nid',
++    'relationship' => 'none',
++  ),
++  'vid' => array(
++    'label' => 'Quiz Node VID',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'exclude' => 0,
++    'id' => 'vid',
++    'table' => 'quiz_node_properties',
++    'field' => 'vid',
++    'relationship' => 'none',
++  ),
++  'quiz_close' => array(
++    'label' => 'Quiz close time',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'date_format' => 'small',
++    'custom_date_format' => '',
++    'exclude' => 0,
++    'id' => 'quiz_close',
++    'table' => 'quiz_node_properties',
++    'field' => 'quiz_close',
++    'relationship' => 'none',
++  ),
++  'quiz_open' => array(
++    'label' => 'Quiz open time',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'date_format' => 'small',
++    'custom_date_format' => '',
++    'exclude' => 0,
++    'id' => 'quiz_open',
++    'table' => 'quiz_node_properties',
++    'field' => 'quiz_open',
++    'relationship' => 'none',
++  ),
++  'time_limit' => array(
++    'label' => 'Time limit',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'set_precision' => FALSE,
++    'precision' => 0,
++    'decimal' => '.',
++    'separator' => ',',
++    'prefix' => '',
++    'suffix' => '',
++    'exclude' => 0,
++    'id' => 'time_limit',
++    'table' => 'quiz_node_properties',
++    'field' => 'time_limit',
++    'relationship' => 'none',
++  ),
++  'takes' => array(
++    'label' => 'Allowed takes',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'exclude' => 0,
++    'id' => 'takes',
++    'table' => 'quiz_node_properties',
++    'field' => 'takes',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('arguments', array(
++  'uid' => array(
++    'default_action' => 'not found',
++    'style_plugin' => 'default_summary',
++    'style_options' => array(),
++    'wildcard' => 'all',
++    'wildcard_substitution' => 'All',
++    'title' => 'Quizzes created by %1',
++    'default_argument_type' => 'fixed',
++    'default_argument' => '',
++    'validate_type' => 'none',
++    'validate_fail' => 'not found',
++    'break_phrase' => 0,
++    'not' => 0,
++    'id' => 'uid',
++    'table' => 'quiz_node_results',
++    'field' => 'uid',
++    'relationship' => 'none',
++    'default_options_div_prefix' => '',
++    'default_argument_user' => 0,
++    'default_argument_fixed' => '',
++    'default_argument_php' => '',
++    'validate_argument_node_type' => array(
++      'long_answer' => 0,
++      'multichoice' => 0,
++      'quiz' => 0,
++      'true_false' => 0,
++      'page' => 0,
++      'story' => 0,
++    ),
++    'validate_argument_node_access' => 0,
++    'validate_argument_nid_type' => 'nid',
++    'validate_argument_vocabulary' => array(),
++    'validate_argument_type' => 'tid',
++    'user_argument_type' => 'either',
++    'restrict_user_roles' => 0,
++    'user_roles' => array(),
++    'validate_argument_php' => '',
++  ),
++));
++$handler->override_option('access', array(
++  'type' => 'none',
++));
++$handler->override_option('style_plugin', 'table');
++$handler->override_option('style_options', array(
++  'grouping' => 'nid',
++  'override' => 1,
++  'sticky' => 0,
++  'order' => 'asc',
++  'columns' => array(
++    'nid' => 'nid',
++    'vid' => 'vid',
++    'quiz_close' => 'quiz_close',
++    'quiz_open' => 'quiz_open',
++    'time_limit' => 'time_limit',
++  ),
++  'info' => array(
++    'nid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'vid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'quiz_close' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'quiz_open' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'time_limit' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++  ),
++  'default' => '-1',
++));
++$handler = $view->new_display('page', 'Page', 'page_1');
++$handler->override_option('path', 'quiztest/byauthor/%');
++$handler->override_option('menu', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++  'name' => 'navigation',
++));
++$handler->override_option('tab_options', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++));
+diff --git a/includes/views/defaults/quiz_by_taker.view.inc b/includes/views/defaults/quiz_by_taker.view.inc
+new file mode 100644
+index 0000000..5e2d7ad
+--- /dev/null
++++ b/includes/views/defaults/quiz_by_taker.view.inc
+@@ -0,0 +1,311 @@
++<?php
++
++$view = new view;
++$view->name = 'quiz_by_taker';
++$view->description = 'View of all the quizzes a user has taken';
++$view->tag = 'quiz';
++$view->view_php = '';
++$view->base_table = 'quiz_node_properties';
++$view->is_cacheable = FALSE;
++$view->api_version = 2;
++$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
++$handler = $view->new_display('default', 'Defaults', 'default');
++$handler->override_option('relationships', array(
++  'vid' => array(
++    'label' => 'quiz revision',
++    'required' => 1,
++    'id' => 'vid',
++    'table' => 'quiz_node_results',
++    'field' => 'vid',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('fields', array(
++  'title' => array(
++    'label' => 'Title',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'link_to_node' => 0,
++    'exclude' => 0,
++    'id' => 'title',
++    'table' => 'node_revision',
++    'field' => 'title',
++    'relationship' => 'vid',
++  ),
++  'name' => array(
++    'label' => 'Name',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'link_to_user' => 1,
++    'overwrite_anonymous' => 0,
++    'anonymous_text' => '',
++    'exclude' => 0,
++    'id' => 'name',
++    'table' => 'users',
++    'field' => 'name',
++    'relationship' => 'vid',
++  ),
++  'score' => array(
++    'label' => 'Score',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'exclude' => 0,
++    'id' => 'score',
++    'table' => 'quiz_node_results',
++    'field' => 'score',
++    'relationship' => 'none',
++  ),
++  'time_start' => array(
++    'label' => 'Quiz Start Time.',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'date_format' => 'small',
++    'custom_date_format' => '',
++    'exclude' => 0,
++    'id' => 'time_start',
++    'table' => 'quiz_node_results',
++    'field' => 'time_start',
++    'relationship' => 'none',
++  ),
++  'time_end' => array(
++    'label' => 'Quiz End Time',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'html' => 0,
++    ),
++    'date_format' => 'small',
++    'custom_date_format' => '',
++    'exclude' => 0,
++    'id' => 'time_end',
++    'table' => 'quiz_node_results',
++    'field' => 'time_end',
++    'relationship' => 'none',
++  ),
++  'quiz_state' => array(
++    'label' => 'Quiz State',
++    'alter' => array(
++      'alter_text' => 0,
++      'text' => '',
++      'make_link' => 0,
++      'path' => '',
++      'alt' => '',
++      'prefix' => '',
++      'suffix' => '',
++      'help' => '',
++      'trim' => 0,
++      'max_length' => '',
++      'word_boundary' => 1,
++      'ellipsis' => 1,
++      'strip_tags' => 0,
++      'html' => 0,
++    ),
++    'exclude' => 0,
++    'id' => 'quiz_state',
++    'table' => 'quiz_node_results',
++    'field' => 'quiz_state',
++    'relationship' => 'none',
++  ),
++));
++$handler->override_option('arguments', array(
++  'uid' => array(
++    'default_action' => 'not found',
++    'style_plugin' => 'default_summary',
++    'style_options' => array(),
++    'wildcard' => 'all',
++    'wildcard_substitution' => 'All',
++    'title' => 'Quizzes taken by %1',
++    'default_argument_type' => 'fixed',
++    'default_argument' => '',
++    'validate_type' => 'none',
++    'validate_fail' => 'not found',
++    'break_phrase' => 0,
++    'not' => 0,
++    'allow_null' => 1,
++    'id' => 'uid',
++    'table' => 'quiz_node_results',
++    'field' => 'uid',
++    'relationship' => 'none',
++    'default_options_div_prefix' => '',
++    'default_argument_user' => 0,
++    'default_argument_fixed' => '',
++    'default_argument_php' => '',
++    'validate_argument_node_type' => array(
++      'multichoice' => 0,
++      'quiz' => 0,
++      'long_answer' => 0,
++      'true_false' => 0,
++      'page' => 0,
++      'story' => 0,
++      'wanky_group' => 0,
++    ),
++    'validate_argument_node_access' => 0,
++    'validate_argument_nid_type' => 'nid',
++    'validate_argument_vocabulary' => array(
++      '1' => 0,
++      '2' => 0,
++      '3' => 0,
++    ),
++    'validate_argument_type' => 'tid',
++    'user_argument_type' => '',
++    'restrict_user_roles' => 0,
++    'user_roles' => array(),
++    'validate_argument_php' => '',
++    'validate_user_argument_type' => 'uid',
++    'validate_user_roles' => array(
++      '2' => 0,
++    ),
++    'validate_argument_transform' => 0,
++    'validate_user_restrict_roles' => 0,
++    'validate_argument_is_member' => 0,
++  ),
++));
++$handler->override_option('filters', array(
++  'nid' => array(
++    'operator' => '=',
++    'value' => '',
++    'group' => '0',
++    'exposed' => FALSE,
++    'expose' => array(
++      'operator' => FALSE,
++      'label' => '',
++    ),
++    'which_vid' => 'latest',
++    'secondary' => 'results',
++    'id' => 'nid',
++    'table' => 'quiz_node_properties',
++    'field' => 'nid',
++    'relationship' => 'none',
++    'secondary_group_by' => 'uid',
++    'secondary_group_by_table' => 'quiz_node_results',
++    'secondary_table' => 'quiz_node_results',
++    'secondaries' => array(
++      'secondary_group_by' => 'uid',
++      'secondary_table' => 'quiz_node_results',
++      'secondary_vid' => 'vid',
++      'secondary_nid' => 'nid',
++    ),
++  ),
++));
++$handler->override_option('access', array(
++  'type' => 'none',
++));
++$handler->override_option('style_plugin', 'table');
++$handler->override_option('style_options', array(
++  'grouping' => 'vid',
++  'override' => 1,
++  'sticky' => 0,
++  'order' => 'asc',
++  'columns' => array(
++    'time_end' => 'time_end',
++    'nid' => 'nid',
++    'vid' => 'vid',
++    'time_start' => 'time_start',
++    'score' => 'score',
++    'uid' => 'uid',
++  ),
++  'info' => array(
++    'time_end' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'nid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'vid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'time_start' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'score' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++    'uid' => array(
++      'sortable' => 0,
++      'separator' => '',
++    ),
++  ),
++  'default' => '-1',
++));
++$handler = $view->new_display('page', 'Page', 'page_1');
++$handler->override_option('path', 'quiztest/bytaker/%');
++$handler->override_option('menu', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++  'name' => 'navigation',
++));
++$handler->override_option('tab_options', array(
++  'type' => 'none',
++  'title' => '',
++  'description' => '',
++  'weight' => 0,
++));
+diff --git a/includes/views/handlers/quiz_views_handler_field_user_quiz_state.inc b/includes/views/handlers/quiz_views_handler_field_user_quiz_state.inc
+index 99dd86b..37c9e69 100644
+--- a/includes/views/handlers/quiz_views_handler_field_user_quiz_state.inc
++++ b/includes/views/handlers/quiz_views_handler_field_user_quiz_state.inc
+@@ -24,7 +24,7 @@ class quiz_views_handler_field_user_quiz_state extends views_handler_field {
+       return t('Finished');
+     }
+     else {
+-      return t('In Progress');
++      return t('Not Started / In Progress');
+     }
+   }
+ }
+diff --git a/includes/views/handlers/quiz_views_handler_filter_quiz_nid.inc b/includes/views/handlers/quiz_views_handler_filter_quiz_nid.inc
+index c715289..06431e0 100644
+--- a/includes/views/handlers/quiz_views_handler_filter_quiz_nid.inc
++++ b/includes/views/handlers/quiz_views_handler_filter_quiz_nid.inc
+@@ -43,7 +43,9 @@ class quiz_views_handler_filter_quiz_nid extends views_handler_filter {
+   function construct() {
+     parent::construct();
+     $this->vid_field = !empty($this->definition['vid field']) ? $this->definition['vid field'] : 'vid';
+-    $this->group_by = $this->definition['group by'];
++    if (!empty($this->definition['group by'])) {
++      $this->group_by = $this->definition['group by'];
++    }
+     if (!empty($this->definition['secondary group by'])) {
+       $this->secondary_group_by = $this->definition['secondary group by'];
+     }
+@@ -57,7 +59,7 @@ class quiz_views_handler_filter_quiz_nid extends views_handler_filter {
+     $options = parent::option_definition();
+ 
+     $options['which_vid'] = array('default' => 'latest');
+-    $options['secondary'] = array('default' => 'none');
++    $options['secondary'] = array('default' => array());
+ 
+     return $options;
+   }
+@@ -117,7 +119,12 @@ class quiz_views_handler_filter_quiz_nid extends views_handler_filter {
+       $this->secondary_table_alias = $this->query->ensure_table($this->secondary_table);
+       $this->query->add_groupby("$this->secondary_table_alias.$this->secondary_group_by");
+     }
+-    $this->query->add_where(0, "$this->secondary_table_alias.$this->secondary_vid", $this->subselect());
++    //Get alias
++    $quiz_property_alias = $this->query->ensure_table('quiz_node_properties');
++    $node_alias = $this->query->ensure_table('node');
++    $max_vid_subquery = "SELECT MAX(vid) FROM {$quiz_property_alias} WHERE $quiz_property_alias.nid = $node_alias.nid";
++    $where_clause = "quiz_node_properties.vid = ($max_vid_subquery)";
++    $this->query->add_where_expression($this->options['group'], $where_clause);
+   }
+ 
+   /**
+diff --git a/question_types/matching/matching.classes.inc b/question_types/matching/matching.classes.inc
+index 5ea165e..58744b5 100644
+--- a/question_types/matching/matching.classes.inc
++++ b/question_types/matching/matching.classes.inc
+@@ -468,10 +468,10 @@ class MatchingResponse extends QuizQuestionResponse {
+     $data = $metadata = array();
+     // Build the question answers header (add blank space for IE).
+     $metadata[] = t('Match');
++    $metadata[] = t('User answer');
+     if ($showpoints) {
+       $metadata[] = t('Correct Answer');
+     }
+-    $metadata[] = t('User answer');
+ 
+     $MatchingQuestion = new MatchingQuestion($this->question);
+     $correct_answers = $MatchingQuestion->getCorrectAnswer();
+diff --git a/question_types/multichoice/multichoice.classes.inc b/question_types/multichoice/multichoice.classes.inc
+index b5d92f1..2fe3c7a 100755
+--- a/question_types/multichoice/multichoice.classes.inc
++++ b/question_types/multichoice/multichoice.classes.inc
+@@ -312,9 +312,11 @@ class MultichoiceQuestion extends QuizQuestion {
+       $user_answer_id = db_query('SELECT id FROM {quiz_multichoice_user_answers} WHERE question_nid = :nid', array(':nid' => $this->node->nid))->fetchCol();
+     }
+ 
+-    db_delete('quiz_multichoice_user_answer_multi')
+-      ->condition('user_answer_id', $user_answer_id, 'IN')
+-      ->execute();
++ if ($user_answer_id) {
++       db_delete('quiz_multichoice_user_answer_multi')
++          ->condition('user_answer_id', $user_answer_id, 'IN')
++          ->execute();
++    }
+ 
+     $delete_properties->execute();
+     $delete_answers->execute();
+diff --git a/question_types/quiz_question/quiz_question.core.inc b/question_types/quiz_question/quiz_question.core.inc
+index d3d0e70..abc9789 100644
+--- a/question_types/quiz_question/quiz_question.core.inc
++++ b/question_types/quiz_question/quiz_question.core.inc
+@@ -576,17 +576,17 @@ abstract class QuizQuestion {
+       ->execute();
+       $quizzes_to_update[] = $new_node->vid;
+     }
+-    
++
+     // Update max_score for relationships if auto update max score is enabled
+     // for question
+     if(isset($this->node->nid)) {
+       $result = db_query(
+-          'SELECT parent_vid as vid from {quiz_node_relationship} where child_nid = :nid and child_vid = :vid and auto_update_max_score=1', 
+-          array(':nid' => $this->node->nid, ':vid' => $this->node->vid));      
++          'SELECT parent_vid as vid from {quiz_node_relationship} where child_nid = :nid and child_vid = :vid and auto_update_max_score=1',
++          array(':nid' => $this->node->nid, ':vid' => $this->node->vid));
+       foreach ($result as $record) {
+         $quizzes_to_update[] = $record->vid;
+       }
+-      
++
+       db_update('quiz_node_relationship')
+         ->fields(array('max_score' => $this->getMaximumScore()))
+         ->condition('child_nid', $this->node->nid)
+@@ -594,7 +594,7 @@ abstract class QuizQuestion {
+         ->condition('auto_update_max_score', 1)
+         ->execute();
+     }
+-    
++
+     quiz_update_max_score_properties($quizzes_to_update);
+     return $quizzes_kept;
+   }
+@@ -641,14 +641,14 @@ abstract class QuizQuestion {
+    * Utility function that returns the format of the node body
+    */
+   protected function getFormat() {
+-    $body = field_get_items('node', $this->question, 'body');
++    $body = field_get_items('node', $this->node, 'body');
+     return ($body ? $body[0]['format'] : NULL);
+   }
+-  
++
+   /**
+    * This may be overridden in subclasses. If it returns true,
+-   * it means the max_score is updated for all occurrences of 
+-   * this question in quizzes.  
++   * it means the max_score is updated for all occurrences of
++   * this question in quizzes.
+    */
+   protected function autoUpdateMaxScore() {
+     return false;
+diff --git a/question_types/quiz_question/quiz_question.module b/question_types/quiz_question/quiz_question.module
+index 5a6f9a6..67327fe 100644
+--- a/question_types/quiz_question/quiz_question.module
++++ b/question_types/quiz_question/quiz_question.module
+@@ -265,6 +265,11 @@ function quiz_question_evaluate_question($question, $result_id, $answer = NULL)
+     // FIXME this use of POST array is hacky. We will try to use FAPI mor accurately in Quiz 5.x
+     $answer = $_POST['tries'];
+   }
++  
++ if (empty($answer) && isset($_FILES['files']['type']['tries']) && !empty($_FILES['files']['type']['tries'])) {
++ $answer = $_FILES;  
++ }
++  
+   unset($_POST['tries']);
+   $response = _quiz_question_response_get_instance($result_id, $question, $answer);
+ 
+diff --git a/quiz.module b/quiz.module
+index 2473788..ddc7362 100644
+--- a/quiz.module
++++ b/quiz.module
+@@ -1965,19 +1965,26 @@ function quiz_take_quiz($quiz) {
+       $jumping = TRUE;
+     }
+ 
++    $repeat = $quiz->repeat_until_correct && $_POST['op'] != t('Back') 
++        && $q_passed_validation === TRUE && $result && !$result->is_correct 
++        && $result->is_evaluated;
++    
+     // Stash feedback in the session, since the $_POST gets cleared.
+-    if ($quiz->feedback_time == QUIZ_FEEDBACK_QUESTION && $_POST['op'] != t('Back') && $q_passed_validation === TRUE) {
++    if (!$repeat && $quiz->feedback_time == QUIZ_FEEDBACK_QUESTION && $_POST['op'] != t('Back') && $q_passed_validation === TRUE) {
+       // Invoke hook_get_report().
+-      $report = module_invoke($module, 'get_report', $former_question_array['nid'], $former_question_array['vid'], $_SESSION['quiz_' . $quiz->nid]['result_id']);
+-      $path = drupal_get_path('module', 'quiz');
+-      require_once DRUPAL_ROOT . '/' . $path . '/quiz.pages.inc';
+-      if ($report) {
+-        $report_form = drupal_get_form('quiz_report_form', array($report), TRUE, TRUE, TRUE);
+-        $report_form['op'] = array(
+-          '#type' => 'submit',
+-          '#value' => t('Next question'),
+-        );
+-        return $report_form;
++      $prev_question = node_load($former_question_array['nid']);
++      if ($prev_question->type != 'quiz_directions') {
++        $report = module_invoke($module, 'get_report', $former_question_array['nid'], $former_question_array['vid'], $_SESSION['quiz_' . $quiz->nid]['result_id']);
++        $path = drupal_get_path('module', 'quiz');
++        require_once DRUPAL_ROOT . '/' . $path . '/quiz.pages.inc';
++        if ($report) {
++          $report_form = drupal_get_form('quiz_report_form', array($report), TRUE, TRUE, TRUE);
++          $report_form['op'] = array(
++            '#type' => 'submit',
++            '#value' => t('Next question'),
++          );
++          return $report_form;
++        }
+       }
+     }
+ 
+@@ -3214,8 +3221,9 @@ function _quiz_resume_existing_quiz($quiz, $uid, $rid) {
+   // Timed quizzes are likely to have expired by this point. But we let
+   // the quiz_take_quiz handler handle that.
+   $_SESSION['quiz_' . $quiz->nid]['question_start_time'] = REQUEST_TIME;
+-  $_SESSION['quiz_' . $quiz->nid]['question_duration'] = $quiz->time_limit;
+-
++  if ($quiz->time_limit > 0) {
++    $_SESSION['quiz_' . $quiz->nid]['question_duration'] = $quiz->time_limit;
++  }
+   drupal_set_message(t('Resuming a previous quiz in-progress.'), 'status');
+ }
+ 
