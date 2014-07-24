@@ -1,0 +1,161 @@
+diff --git a/og.module b/og.module
+index 1c057ea..da6f8da 100644
+--- a/og.module
++++ b/og.module
+@@ -1073,7 +1073,7 @@ function og_membership_create($gid, $entity_type, $etid, $values = array()) {
+ 
+   // Process the values as it might arrived from og_group().
+   if (!empty($values['membership type'])) {
+-    $values['name'] = $values['membership type'];
++    $values['type'] = $values['membership type'];
+     unset($values['membership type']);
+   }
+ 
+@@ -1693,6 +1693,9 @@ function og_group($gid, $values = array()) {
+       og_invalidate_cache();
+       // Unset our temporary property.
+       unset($entity->og_skip_group_create);
++
++      // Allow other modules trigger when user add to group instead trigger on og_membership entity insert.
++      module_invoke_all('og_group', $gid, $entity_type, $entity);
+     }
+   }
+   return $entity;
+diff --git a/og.rules.inc b/og.rules.inc
+index 5afb094..0a9c22d 100644
+--- a/og.rules.inc
++++ b/og.rules.inc
+@@ -223,10 +223,57 @@ function og_rules_action_info() {
+     'access callback' => 'og_rules_integration_access',
+   );
+ 
++  $items['og_add_role'] = array(
++    'label' => t('Assign a group role to member'),
++    'group' => t('Organic groups'),
++    'access callback' => 'og_rules_integration_access',
++    'base' => 'og_rules_add_role',
++    'parameter' => array(
++      'membership' => array(
++        'type' => 'og_membership',
++        'label' => t("The user's group membership"),
++      ),
++      'roles' => array(
++        'type' => 'list<integer>',
++        'label' => t('Group roles'),
++        'options list' => 'og_rules_get_writable_global_roles',
++      ),
++    ),
++  );
++  $items['og_remove_role'] = array(
++    'label' => t('Remove group role from member'),
++    'group' => t('Organic groups'),
++    'access callback' => 'og_rules_integration_access',
++    'base' => 'og_rules_remove_role',
++    'parameter' => array(
++      'membership' => array(
++        'type' => 'og_membership',
++        'label' => t("The user's group membership"),
++      ),
++      'roles' => array(
++        'type' => 'list<integer>',
++        'label' => t('Group roles'),
++        'options list' => 'og_rules_get_writable_global_roles',
++      ),
++    ),
++  );
+   return $items;
+ }
+ 
+ /**
++ * Gets all global roles minus thus we cannot modify.
++ */
++function og_rules_get_writable_global_roles() {
++   $roles = og_get_global_roles();
++  // Remove OG_ANONYMOUS_ROLE and OG_AUTHENTICATED_ROLE.
++  foreach (array(OG_ANONYMOUS_ROLE, OG_AUTHENTICATED_ROLE) as $name) {
++    $rid = array_search($name, $roles);
++    unset($roles[$rid]);
++  }
++  return $roles;
++}
++
++/**
+  * Action: Get group members from a group content.
+  */
+ function og_rules_get_members($group_content) {
+@@ -327,6 +374,28 @@ function og_rules_remove_entity_from_group(EntityDrupalWrapper $entity, $group)
+ }
+ 
+ /**
++ * Action: Adds group roles to a particular user within a group context.
++ */
++function og_rules_add_role($membership, $roles) {
++  if ($membership->entity_type == 'user') {
++    foreach ($roles as $rid) {
++      og_role_grant($membership->gid, $membership->etid, $rid);
++    }
++  }
++}
++
++/**
++ * Action: Removes group roles from a particular user within a group context.
++ */
++function og_rules_remove_role($membership, $roles) {
++  if ($membership->entity_type == 'user') {
++    foreach ($roles as $rid) {
++      og_role_revoke($membership->gid, $membership->etid, $rid);
++    }
++  }
++}
++
++/**
+  * OG Rules integration access callback.
+  */
+ function og_rules_integration_access($type, $name) {
+@@ -388,6 +457,24 @@ function og_rules_condition_info() {
+     'base' => 'og_rules_condition_user_in_group',
+     'access callback' => 'og_rules_integration_access',
+   );
++  $items['og_user_has_role'] = array(
++    'label' => t('User has group role'),
++    'group' => t('Organic groups'),
++    'parameter' => array(
++      'membership' => array(
++        'type' => 'og_membership',
++        'label' => t('Membership'),
++        'description' => t('The user membership whose group roles should be checked.'),
++      ),
++      'roles' => array(
++        'type' => 'list<integer>',
++        'label' => t('Group roles'),
++        'options list' => 'og_get_global_roles',
++      ),
++    ),
++    'base' => 'og_rules_condition_user_has_role',
++    'access callback' => 'og_rules_integration_access',
++  );
+   $items['og_entity_in_group'] = array(
+     'label' => t('Entity is in group'),
+     'group' => t('Organic groups'),
+@@ -480,6 +567,21 @@ function og_rules_condition_user_in_group_help() {
+ }
+ 
+ /**
++ * Condition "User has roles".
++ */
++function og_rules_condition_user_has_role($membership, $roles) {
++  $user_roles = og_get_user_roles($membership->gid, $membership->etid);
++  return count(array_diff($roles, $user_roles)) == 0;
++}
++
++/**
++ * Condition "User has roles" help.
++ */
++function og_rules_condition_user_has_role_help() {
++  return t('Evaluates to TRUE if the user has the selected og-roles in the group.');
++}
++
++/**
+  * Condition: Entity is group.
+  */
+ function og_rules_entity_is_group(EntityDrupalWrapper $entity) {
