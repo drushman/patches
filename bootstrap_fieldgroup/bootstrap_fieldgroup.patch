@@ -1,0 +1,13 @@
+diff --git a/templates/bootstrap-fieldgroup-nav.tpl.php b/templates/bootstrap-fieldgroup-nav.tpl.php
+index 7d0c56e..72d1f99 100644
+--- a/templates/bootstrap-fieldgroup-nav.tpl.php
++++ b/templates/bootstrap-fieldgroup-nav.tpl.php
+@@ -32,7 +32,7 @@
+ 
+     <ul class="nav <?php print $nav_classes; ?>">
+       <?php foreach ($navs as $index => $nav) : ?>
+-        <li class="<?php print $nav['classes']; ?><?php if ($index === $active) print 'active'; ?>">
++        <li class="<?php print $nav['classes']; ?> <?php if ($index === $active) print 'active'; ?>">
+           <?php print $nav['content']; ?>
+         </li>
+       <?php endforeach; ?>
