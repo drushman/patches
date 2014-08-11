@@ -1,0 +1,139 @@
+diff --git a/context_reaction_theme.install b/context_reaction_theme.install
+index d5677bd..467c931 100644
+--- a/context_reaction_theme.install
++++ b/context_reaction_theme.install
+@@ -1,19 +1,11 @@
+ <?php
+-/**
+- * @file
+- * Context plugin file to provide changing the active theme as a context
+- * reaction.
+- */
+ 
+ /**
+- * Implements hook_install().
+- *
+- * Set weight to 99 so we're one of the last modules to run. Can help with
+- * timing in some cases (like og_subgroups)
++ * Implementation of hook_install().
+  */
+ function context_reaction_theme_install() {
+-  db_update('system')
+-    ->fields(array('weight' => 99))
+-    ->condition('name', 'context_reaction_theme')
+-    ->execute();
++  // Set weight to 99 so we're one of the last modules to run. Can help with
++  // timing in some cases (like og_subgroups)
++  db_query("UPDATE {system} SET weight = 99 WHERE name = 'context_reaction_theme'");
+ }
++
+diff --git a/context_reaction_theme.module b/context_reaction_theme.module
+index 43c51c5..fd58f0c 100644
+--- a/context_reaction_theme.module
++++ b/context_reaction_theme.module
+@@ -1,25 +1,9 @@
+ <?php
+ 
+-/**
+- * @file
+- * This module enables a context reaction to alter the active theme.
+- *
+- * See README file for full credits.
+- */
+ 
+-/**
+- * Implements hook_custom_theme().
+- *
+- * Test a few of the context conditions and execute the plugin if it is matched.
+- *
+- * @return string | null
+- *   String of the theme to
+- *
+- * @see hook_custom_theme()
+- */
+ function context_reaction_theme_custom_theme() {
+-  // Initiate core conditions here to trigger all contexts with an active_theme
+-  // reaction and core conditions only.
++  //init core conditions here to trigger all context's with a 
++  //active_theme reaction and core conditions only
+   if ($plugin = context_get_plugin('condition', 'path')) {
+     $plugin->execute();
+   }
+@@ -31,21 +15,22 @@ function context_reaction_theme_custom_theme() {
+     global $user;
+     $plugin->execute($user);
+   }
+-  // @todo: write a module_implements hook to allow custom conditions here?
+-
+-  // Check for the active theme reaction.
+-  if ($plugin = context_get_plugin('reaction', 'active_theme')) {
+-    if ($custom_theme = $plugin->execute()) {
+-      // return the theme name!
++  if ($node = menu_get_object()) {
++    context_node_condition($node, 'view');
++  }
++  
++  //check for the active theme reaction
++  if (!(user_is_administrator() && path_is_admin(current_path())) && $plugin = context_get_plugin('reaction', 'active_theme')) {
++    $custom_theme = $plugin->execute();
++    if ($custom_theme) {
+       return $custom_theme;
+     }
+   }
+ }
+ 
++
+ /**
+- * Implements hook_ctools_plugin_api().
+- *
+- * Notify CTools that we'll be using the plugin API with Context module.
++ * Notify CTools that we'll be using the plugin API with Context module
+  */
+ function context_reaction_theme_ctools_plugin_api($module, $api) {
+   if ($module == 'context' && $api == 'plugins') {
+@@ -54,22 +39,14 @@ function context_reaction_theme_ctools_plugin_api($module, $api) {
+ }
+ 
+ /**
+- * Implements hook_context_plugins().
+- *
+- * CTools plugin API hook for Context.
+- *
+- * @return array
+- *   Config details for each reaction.
+- *
+- * @see hook_context_plugins()
++ * CTools plugin API hook for Context
+  */
+ function context_reaction_theme_context_plugins() {
+   $plugins = array();
+-
+   $plugins['context_reaction_active_theme'] = array(
+     'handler' => array(
+-      'path' => drupal_get_path('module', 'context_reaction_theme') . '/plugins',
+-      'file' => 'context_reaction_theme.inc',
++      'path' => drupal_get_path('module', 'context_reaction_theme') .'/plugins',
++      'file' => 'context_reaction_active_theme.inc',
+       'class' => 'context_reaction_active_theme',
+       'parent' => 'context_reaction',
+     ),
+@@ -79,18 +56,14 @@ function context_reaction_theme_context_plugins() {
+ }
+ 
+ /**
+- * Implements hook_context_registry().
+- *
+  * Registry hook for conditions & reactions.
+- *
+- * @see hook_context_registry()
+  */
+ function context_reaction_theme_context_registry() {
+   return array(
+     'reactions' => array(
+       'active_theme' => array(
+         'title' => t('Active theme'),
+-        'description' => t('Change the active theme.'),
++        'description' => t('Control HTML theme variables using context.'),
+         'plugin' => 'context_reaction_active_theme',
+       ),
+     ),
