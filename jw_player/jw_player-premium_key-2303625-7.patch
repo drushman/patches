@@ -1,0 +1,24 @@
+diff --git a/jw_player.module b/jw_player.module
+index fa57cc8..90dc43e 100644
+--- a/jw_player.module
++++ b/jw_player.module
+@@ -480,11 +480,7 @@ function jw_player_libraries_info() {
+     ),
+   );
+   if ($key = variable_get('jw_player_key', NULL)) {
+-    $libraries['jwplayer']['integration files']['js']['jwplayer.key="' . $key . '"'] = array(
+-      'type' => 'inline',
+-      'scope' => 'header',
+-      'weight' => 5
+-    );
++    drupal_add_js('jwplayer.key="' . $key . '";', array('type' => 'inline', 'scope' => 'header', 'weight' => 5));
+   }
+   return $libraries;
+ }
+@@ -583,4 +579,4 @@ function jw_player_supports($file) {
+   else {
+     return FALSE;
+   }
+-}
+\ No newline at end of file
++}
