@@ -1,24 +1,177 @@
 diff --git a/jw_player.module b/jw_player.module
-index fa57cc8..90dc43e 100644
+index fa57cc8..f01f6d7 100644
 --- a/jw_player.module
 +++ b/jw_player.module
-@@ -480,11 +480,7 @@ function jw_player_libraries_info() {
+@@ -60,7 +60,7 @@ function jw_player_field_formatter_info() {
+   $formatters = array(
+     'jw_player' => array(
+       'label' => t('JW player'),
+-      'field types' => array('file'),
++      'field types' => array('file', 'video'),
+       'settings' => array(
+         'jwplayer_preset' => '',
+         'check_support' => FALSE,
+@@ -69,7 +69,7 @@ function jw_player_field_formatter_info() {
+     
+     'jw_player_playlist' => array(
+       'label' => t('JW player playlist'),
+-      'field types' => array('file'),
++      'field types' => array('file', 'video'),
+       'settings' => array(
+         'jwplayer_preset' => '',
+         'check_support' => FALSE,
+@@ -78,7 +78,7 @@ function jw_player_field_formatter_info() {
+     
+     'jw_player_sources' => array(
+       'label' => t('JW player sources'),
+-      'field types' => array('file'),
++      'field types' => array('file', 'video'),
+       'settings' => array(
+         'jwplayer_preset' => '',
+         'check_support' => FALSE,
+@@ -190,6 +190,15 @@ function jw_player_field_formatter_view($entity_type, $entity, $field, $instance
+   if (!empty($display['settings']['check_support'])) {
+     $items = array_filter($items, 'jw_player_supports');
+   }
++  // Support for transcoded videos in Video a field.
++  if ($field['type'] == 'video') {
++    foreach ($items as $delta => $item) {
++      if (!empty($file['playablefiles'])) {
++        $items[$delta] = reset($file['playablefiles']);
++      }
++    }
++  }
++
+   if ($display['type'] == 'jw_player') {
+     // Process files for the theme function.
+     foreach ($items as $delta => $item) {
+@@ -328,11 +337,12 @@ function jw_player_default_settings() {
+  * Process variables for jw_player.tpl.php.
+  */
+ function template_preprocess_jw_player(&$variables) {
+-  //In some instances an object is passed so convert to an array
++  //In some instances an object is passed so convert to an array.
+   if(is_object($variables['file'])) {
+     $variables['file'] = (array) $variables['file'];
+   }
+ 
++
+   // Load defaults as the starting point.
+   $default_settings = jw_player_default_settings();
+ 
+@@ -444,13 +454,11 @@ function template_preprocess_jw_player(&$variables) {
+ 
+ /**
+  * Implements hook_process_HOOK().
+- *
+- * Add the JW Player Javascript according to the method selected.
+  */
+ function jw_player_process_jw_player(&$variables) {
+   $variables['jw_player_inline_js_code'] = stripslashes(json_encode($variables['config']));
+-  // Add js file that enables url based seeking.
+-  libraries_load('jwplayer');
++  // Load the JW Player libraries (and integration into Drupal).
++  drupal_add_library('jw_player', 'jwplayer');
+ }
+ 
+ /**
+@@ -476,16 +484,84 @@ function jw_player_libraries_info() {
+         'jw_player' => array(
+           'js' => array('jw_player_seek.js')
+         ),
+-      )
++      ),
++      'callbacks' => array(
++        'post-load' => array('jw_player_libraries_load'),
++      ),
      ),
    );
++  return $libraries;
++}
++
++/**
++ * Post-load callback for the jwplayer library.
++ *
++ * @see jw_player_libraries_info().
++ */
++function jw_player_libraries_load($library, $version, $variant) {
    if ($key = variable_get('jw_player_key', NULL)) {
 -    $libraries['jwplayer']['integration files']['js']['jwplayer.key="' . $key . '"'] = array(
--      'type' => 'inline',
--      'scope' => 'header',
--      'weight' => 5
--    );
-+    drupal_add_js('jwplayer.key="' . $key . '";', array('type' => 'inline', 'scope' => 'header', 'weight' => 5));
++    drupal_add_js('jwplayer.key=' . drupal_json_encode($key), array(
++      'type' => 'inline',
++      'scope' => 'header',
++      'weight' => 5
++    ));
++  }
++}
++
++/**
++ * Implements hook_library().
++ */
++function jw_player_library() {
++  $libraries = array();
++  $info = libraries_detect('jwplayer');
++  $libraries['jwplayer'] = array(
++    'title' => 'JW Player',
++    'website' => $info['vendor url'],
++    'version' => $info['installed'] ? $info['version'] : 'cloud-hosted',
++    'js' => array(),
++  );
++  if ($info['installed']) {
++    // Self hosted player, use files from library definition.
++    if (!empty($info['files']['js'])) {
++      foreach ($info['files']['js'] as $data => $option) {
++        if (is_numeric($data)) {
++          $option = "{$info['library path']}/{$option}";
++        }
++        elseif (empty($option['type']) || $option['type'] == 'file') {
++          $data = "{$info['library path']}/{$data}";
++        }
++        $libraries['jwplayer']['js'][$data] = $option;
++      }
++    }
++  }
++  elseif ($account_token = variable_get('jw_player_account_token', false)) {
++    // Cloud hosted player, use external JavaScript.
++    $libraries['jwplayer']['js']["//jwpsrv.com/library/{$account_token}.js"] = array(
++      'type' => 'external',
++    );
++  }
++  if ($key = variable_get('jw_player_key', NULL)) {
++    $libraries['jwplayer']['js']['jwplayer.key=' . drupal_json_encode($key)] = array(
+       'type' => 'inline',
+       'scope' => 'header',
+       'weight' => 5
+     );
    }
++  // Use integration files from library definition.
++  foreach ($info['integration files'] as $module => $files) {
++    foreach (array_keys($files) as $type) {
++      $module_path = drupal_get_path('module', $module);
++      foreach ($files[$type] as $data => $option) {
++        if (is_numeric($data)) {
++          $option = "{$module_path}/{$option}";
++        }
++        elseif (empty($option['type']) || $option['type'] == 'file') {
++          $data = "{$module_path}/{$data}";
++        }
++        $libraries['jwplayer'][$type][$data] = $option;
++      }
++    }
++  }
    return $libraries;
  }
-@@ -583,4 +579,4 @@ function jw_player_supports($file) {
-   else {
-     return FALSE;
-   }
--}
-\ No newline at end of file
-+}
+ 
+@@ -508,6 +584,12 @@ function jw_player_preset_plugins($name = NULL) {
+   return $plugins;
+ }
+ 
++/**
++ * Returns a list of mime types supported by JW player.
++ *
++ * @return array
++ *   A list of mime types, as an array of strings.
++ */
+ function jw_player_supported_mimetypes() {
+   $types = &drupal_static(__FUNCTION__);
+   if (!$types) {
