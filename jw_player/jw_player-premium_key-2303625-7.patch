@@ -97,7 +97,7 @@ index fa57cc8..f01f6d7 100644
 +function jw_player_libraries_load($library, $version, $variant) {
    if ($key = variable_get('jw_player_key', NULL)) {
 -    $libraries['jwplayer']['integration files']['js']['jwplayer.key="' . $key . '"'] = array(
-+    drupal_add_js('jwplayer.key=' . drupal_json_encode($key), array(
++    drupal_add_js('var jwplayer = jwplayer || {};  jwplayer.key=' . drupal_json_encode($key), array(
 +      'type' => 'inline',
 +      'scope' => 'header',
 +      'weight' => 5
