@@ -1,0 +1,36 @@
+diff --git a/views_handler_area_link.inc b/views_handler_area_link.inc
+index c458224..b7202ae 100644
+--- a/views_handler_area_link.inc
++++ b/views_handler_area_link.inc
+@@ -9,6 +9,7 @@ class views_handler_area_link extends views_handler_area {
+     $options['querystring'] = array('default' => '');
+     $options['anchor'] = array('default' => '');
+     $options['class'] = array('default' => '');
++    $options['return'] = array('default' => FALSE);
+     return $options;
+   }
+ 
+@@ -32,6 +33,12 @@ class views_handler_area_link extends views_handler_area {
+       '#default_value' => $this->options['querystring'],
+       '#description' => t('The query parameters that follow the full path'),
+     );
++    $form['return'] = array(
++      '#type' => 'checkbox',
++      '#title' => t('Set destination as the current page'),
++      '#default_value' => $this->options['return'],
++      '#description' => t('If the link leads to a form, this will redirect the user to the view when the form is submitted. This will override any destination set in the querystring option above.'),
++    );
+     $form['anchor'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Link anchor'),
+@@ -95,6 +102,10 @@ class views_handler_area_link extends views_handler_area {
+         }
+         $link_options['query'] =$query;
+       }
++      if (!empty($this->options['return'])) {
++        $destination = drupal_get_destination();
++        $link_options['query']['destination'] = $destination['destination'];
++      }
+       if (!empty($this->options['anchor'])) {
+         $link_options['anchor'] = strtr($this->options['anchor'], $tokens);
+       }
