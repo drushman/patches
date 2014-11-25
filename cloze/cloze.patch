@@ -1,0 +1,57 @@
+From 7e11a9e8f78be5a28d01f3031e0a3c9457405a14 Mon Sep 17 00:00:00 2001
+From: khoa <khoa@go1.com.au>
+Date: Tue, 25 Nov 2014 06:23:38 +0000
+Subject: [PATCH] fix cloze
+
+---
+ cloze.classes.inc | 2 +-
+ cloze.module      | 7 ++++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/cloze.classes.inc b/cloze.classes.inc
+index 8701c88..c5629f5 100644
+--- a/cloze.classes.inc
++++ b/cloze.classes.inc
+@@ -235,7 +235,7 @@ class ClozeResponse extends QuizQuestionResponse {
+       }
+     }
+     else {
+-      $this->answer = $answer;
++      $this->answer = is_array($answer) ? array_map('trim', $answer) : $answer;
+     }
+   }
+ 
+diff --git a/cloze.module b/cloze.module
+index 074dd30..d068672 100644
+--- a/cloze.module
++++ b/cloze.module
+@@ -102,15 +102,15 @@ function _cloze_get_question_chunks($question) {
+     $match = FALSE;
+     $pos = strpos($question, '[');
+     if ($pos) {
+-      $substring = substr($question, 0, $pos - 1);
+-      $question = str_replace($substring, '', $question);
++      $substring = substr($question, 0, $pos);
++      $question = substr($question, $pos, strlen($question));
+       $chunks[] = ($substring);
+       $match = TRUE;
+     }
+     $pos = strpos($question, ']');
+     if ($pos !== FALSE) {
+       $substring = substr($question, 0, $pos + 1);
+-      $question = str_replace($substring, '', $question);
++      $question = substr($question, $pos + 1, strlen($question));
+       $chunks[] = ($substring);
+       $match = TRUE;
+     }
+@@ -119,6 +119,7 @@ function _cloze_get_question_chunks($question) {
+       $question = '';
+     }
+   }
++  $chunks = array_map('trim', $chunks);
+   return $chunks;
+ }
+ 
+-- 
+1.9.1
+
