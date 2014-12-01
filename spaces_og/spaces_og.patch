@@ -1,0 +1,26 @@
+From 5ec9af1e0af4fa7e68f56b6ad3875fdff6788af1 Mon Sep 17 00:00:00 2001
+From: khoa <khoa@go1.com.au>
+Date: Mon, 1 Dec 2014 07:43:24 +0000
+Subject: [PATCH] fix access features in og space
+
+---
+ plugins/space_og.inc | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/plugins/space_og.inc b/plugins/space_og.inc
+index 407025f..8d602c6 100644
+--- a/plugins/space_og.inc
++++ b/plugins/space_og.inc
+@@ -104,7 +104,8 @@ class space_og extends space_type_purl {
+     if ($membership = og_get_group_membership($this->og->gid, 'user', $account->uid)) {
+       $membership = $membership->state;
+     }
+-    $access = $access && (user_access('administer group') || $this->group->{OG_ACCESS_FIELD}[LANGUAGE_NONE][0]['value'] == OG_CONTENT_ACCESS_PUBLIC || $membership);
++    // OG_ACCESS_FIELD != 1 to match with conditions in access_space()
++    $access = $access && (user_access('administer group') || $this->group->{OG_ACCESS_FIELD}[LANGUAGE_NONE][0]['value'] != 1 || $membership);
+ 
+     // Additional check for group membership if authoring content in this group.
+     if ($op === 'create') {
+-- 
+1.9.1
+
