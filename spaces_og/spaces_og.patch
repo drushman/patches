@@ -1,16 +1,16 @@
-From 5ec9af1e0af4fa7e68f56b6ad3875fdff6788af1 Mon Sep 17 00:00:00 2001
+From 6ffffda1b85d4c652e9c9eb58f047f544dbab056 Mon Sep 17 00:00:00 2001
 From: khoa <khoa@go1.com.au>
-Date: Mon, 1 Dec 2014 07:43:24 +0000
-Subject: [PATCH] fix access features in og space
+Date: Tue, 2 Dec 2014 03:08:25 +0000
+Subject: [PATCH] fix features access permission on spaces_og
 
 ---
- plugins/space_og.inc | 3 ++-
+ spaces_og/plugins/space_og.inc | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/plugins/space_og.inc b/plugins/space_og.inc
+diff --git a/spaces_og/plugins/space_og.inc b/spaces_og/plugins/space_og.inc
 index 407025f..8d602c6 100644
---- a/plugins/space_og.inc
-+++ b/plugins/space_og.inc
+--- a/spaces_og/plugins/space_og.inc
++++ b/spaces_og/plugins/space_og.inc
 @@ -104,7 +104,8 @@ class space_og extends space_type_purl {
      if ($membership = og_get_group_membership($this->og->gid, 'user', $account->uid)) {
        $membership = $membership->state;
