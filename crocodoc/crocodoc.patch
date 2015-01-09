@@ -1,34 +1,14 @@
-From bd4523c8fc91df4262dc7fbc6c53b2970119cf03 Mon Sep 17 00:00:00 2001
-From: khoa <khoa@go1.com.au>
-Date: Fri, 9 Jan 2015 02:17:56 +0000
-Subject: [PATCH] fix crocodoc module
-
----
- crocodoc.info           |   8 --
- crocodoc.install        |   4 +-
- crocodoc.module         | 372 +++++++++++++++++++++++-------------------------
- crocodoc_cron_queue.inc |   6 +-
- crocodoc_formatter.inc  | 103 +++++++-------
- 5 files changed, 236 insertions(+), 257 deletions(-)
-
 diff --git a/crocodoc.info b/crocodoc.info
-index 0601242..5a264ae 100644
+index 5f17786..5a264ae 100644
 --- a/crocodoc.info
 +++ b/crocodoc.info
-@@ -3,13 +3,5 @@ name = "Crocodoc File Formatter"
+@@ -3,6 +3,5 @@ name = "Crocodoc File Formatter"
  description = "Enables crocodoc third party document viewer to be used as a file formatter."
  core = 7.x
  configure = admin/config/crocodoc
 -files[] = tests/crocodoc.test
  
  dependencies[] = libraries (2.x)
--
--
--; Information added by drush on 2014-12-17
--version = "e9b1df5734e0635336bb2e4fe8cafe69d41f760c"
--project = "crocodoc"
--datestamp = "1418860138"
--
 diff --git a/crocodoc.install b/crocodoc.install
 index a353f48..72adf22 100644
 --- a/crocodoc.install
@@ -867,6 +847,3 @@ index 83e75e8..ea01b57 100644
 +  );
 +}
 +
--- 
-1.9.1
-
