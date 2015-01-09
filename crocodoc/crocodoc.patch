@@ -1,14 +1,3 @@
-diff --git a/crocodoc.info b/crocodoc.info
-index 5f17786..5a264ae 100644
---- a/crocodoc.info
-+++ b/crocodoc.info
-@@ -3,6 +3,5 @@ name = "Crocodoc File Formatter"
- description = "Enables crocodoc third party document viewer to be used as a file formatter."
- core = 7.x
- configure = admin/config/crocodoc
--files[] = tests/crocodoc.test
- 
- dependencies[] = libraries (2.x)
 diff --git a/crocodoc.install b/crocodoc.install
 index a353f48..72adf22 100644
 --- a/crocodoc.install
