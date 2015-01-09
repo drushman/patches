@@ -1,0 +1,872 @@
+From bd4523c8fc91df4262dc7fbc6c53b2970119cf03 Mon Sep 17 00:00:00 2001
+From: khoa <khoa@go1.com.au>
+Date: Fri, 9 Jan 2015 02:17:56 +0000
+Subject: [PATCH] fix crocodoc module
+
+---
+ crocodoc.info           |   8 --
+ crocodoc.install        |   4 +-
+ crocodoc.module         | 372 +++++++++++++++++++++++-------------------------
+ crocodoc_cron_queue.inc |   6 +-
+ crocodoc_formatter.inc  | 103 +++++++-------
+ 5 files changed, 236 insertions(+), 257 deletions(-)
+
+diff --git a/crocodoc.info b/crocodoc.info
+index 0601242..5a264ae 100644
+--- a/crocodoc.info
++++ b/crocodoc.info
+@@ -3,13 +3,5 @@ name = "Crocodoc File Formatter"
+ description = "Enables crocodoc third party document viewer to be used as a file formatter."
+ core = 7.x
+ configure = admin/config/crocodoc
+-files[] = tests/crocodoc.test
+ 
+ dependencies[] = libraries (2.x)
+-
+-
+-; Information added by drush on 2014-12-17
+-version = "e9b1df5734e0635336bb2e4fe8cafe69d41f760c"
+-project = "crocodoc"
+-datestamp = "1418860138"
+-
+diff --git a/crocodoc.install b/crocodoc.install
+index a353f48..72adf22 100644
+--- a/crocodoc.install
++++ b/crocodoc.install
+@@ -2,11 +2,11 @@
+ 
+ function crocodoc_install() {
+   // generate an api key for crocodoc callbacks
+-  variable_set('crocodoc_local_api_key', hash('md5', variable_get('site_name', '')));
++  variable_set('crocodoc_api_key', 'kocPUvyx12aVCL5Y4gRAn9Md');
+ }
+ 
+ function crocodoc_uninstall() {
+-  variable_del('crocodoc_local_api_key');
++  variable_del('crocodoc_api_key');
+ 
+   //@todo remove all other crocodoc* variables
+ }
+diff --git a/crocodoc.module b/crocodoc.module
+index 79f1cce..b770ac0 100644
+--- a/crocodoc.module
++++ b/crocodoc.module
+@@ -1,36 +1,11 @@
+ <?php
+-require_once drupal_get_path('module', 'crocodoc') .'/crocodoc_formatter.inc';
+-require_once drupal_get_path('module', 'crocodoc') .'/crocodoc_cron_queue.inc';
+ 
+-/**
+- * Specify crocodoc accepted formats 
+- */
+-function _crocodoc_accepted_formats() {
+-  //return array('pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx');
+-  return array('application/pdf', 
+-               'application/msword',
+-               'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+-               'application/vnd.ms-powerpoint',
+-               'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+-               'application/vnd.ms-excel',
+-               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+-  );
+-}
++require_once drupal_get_path('module', 'crocodoc') . '/crocodoc_formatter.inc';
++require_once drupal_get_path('module', 'crocodoc') . '/crocodoc_cron_queue.inc';
+ 
+ /**
+- * Check if document is supported type 
+-**/
+-function _crocodoc_check_file_type($file) {
+-  if ( in_array($file->filemime, _crocodoc_accepted_formats()) ) {
+-    return true;
+-  }
+-
+-  return false;
+-}
+-
+-/**
+- implements hook_permission
+-**/
++  implements hook_permission
++ * */
+ function crocodoc_permission() {
+ 
+   $permissions = array();
+@@ -43,10 +18,9 @@ function crocodoc_permission() {
+   return $permissions;
+ }
+ 
+-
+ /**
+   implements hook_menu
+-**/
++ * */
+ function crocodoc_menu() {
+ 
+   $items = array();
+@@ -58,17 +32,17 @@ function crocodoc_menu() {
+     'page arguments' => array('crocodoc_admin_configuration'),
+     'access arguments' => array('administer crocodoc settings'),
+     'type' => MENU_NORMAL_ITEM,
+-   );
++  );
+ 
+-   //@TODO implement callback path functionality
++  //@TODO implement callback path functionality
+ 
+   return $items;
+ }
+ 
+ /**
+-implements hook_library_info
+-makes the crocodoc php libarary available to the module
+-**/
++  implements hook_library_info
++  makes the crocodoc php libarary available to the module
++ * */
+ function crocodoc_libraries_info() {
+   $libraries['crocodoc-php'] = array(
+     'name' => 'Crocodoc PHP Library',
+@@ -86,10 +60,9 @@ function crocodoc_libraries_info() {
+   return $libraries;
+ }
+ 
+-
+ /**
+   module configuration form
+-**/
++ * */
+ function crocodoc_admin_configuration() {
+   global $base_url;
+ 
+@@ -107,7 +80,7 @@ function crocodoc_admin_configuration() {
+       '#size' => 80,
+     );
+ 
+-     $form['crocodoc_callback_path'] = array(
++    $form['crocodoc_callback_path'] = array(
+       '#type' => 'item',
+       '#title' => t('Crocodoc Callback Path'),
+       '#markup' => $base_url . '/crocodoc_callback/' . variable_get('crocodoc_local_api_key', ''),
+@@ -116,8 +89,7 @@ function crocodoc_admin_configuration() {
+     );
+ 
+     return system_settings_form($form);
+-  }
+-  else {
++  } else {
+     // Something went wrong. :(
+     // This contains a short status code of what went wrong, such as 'not found'.
+     $error = $library['error'];
+@@ -132,26 +104,91 @@ function crocodoc_admin_configuration() {
+ 
+     return $form;
+   }
++}
+ 
++/**
++  implements hook_form_FORM_ID_alter
++  Adds an option to filefield fields to sync files with crocodoc.
++
++  UPGRADING NOTE:
++  D7 Does't provide hooked for modules other than the module that defines a field to alter the settings form for that field, so we have to resort back to a form_alter hook.
++  This is likely to change by D8. http://drupal.org/node/1308860
++
++ * */
++function crocodoc_form_field_ui_field_settings_form_alter(&$form, &$form_state, $form_id) {
++  if (isset($form['field']['type']['#value']) && $form['field']['type']['#value'] == 'file') {
++    $field_name = $form['field']['field_name']['#value'];
++    $form['field']['sync_to_crocodoc'] = array(
++      '#type' => 'checkbox',
++      '#title' => t('Syncronize this field with Crocodoc'),
++      '#default_value' => variable_get('crocodoc_field_' . $field_name, ''),
++      '#description' => t('This option must be enabled for the Crocodoc file formatter to function correctly.'),
++    );
+ 
++    $form['#submit'][] = 'crocodoc_form_field_ui_field_settings_form_submit';
++  }
++}
+ 
++function crocodoc_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
++  if ($form["#instance"]['widget']['type'] == 'file_generic') {
++    $form['instance']['widget']['settings']['crocodoc'] = array(
++      '#type' => 'checkbox',
++      '#title' => 'Crocodoc Field',
++      '#default_value' => $form["#instance"]['widget']['settings']['crocodoc']
++    );
++  }
++}
+ 
++function crocodoc_form_field_ui_field_settings_form_submit($form, &$form_state) {
++  $field_name = $form['field']['field_name']['#value'];
++  variable_set('crocodoc_field_' . $field_name, $form_state['values']['field']['sync_to_crocodoc']);
+ }
+ 
+ /**
+  * Implements hook_entity_insert().
+  */
+ function crocodoc_entity_insert($entity, $type) {
+-  if ($type == 'file') {
+-
+-    //TODO ensure that this entity is related to a field with crocodoc sync enabled
++  crocodoc_entity_change($entity, $type);
+ 
++  if ($type == 'file') {
+     // if processing with cron
+     //$queue = DrupalQueue::get('crocodoc_queue', TRUE);
+     //$queue->createItem(array('task' => 'push', 'file' => $entity));
+-
+     // otherwise do it straight away
+-    // crocodoc_push_document($entity);
++//    crocodoc_push_document($entity);
++  }
++}
++
++/**
++ * Static config bundle have field crocodoc.
++ */
++function crocodoc_info() {
++  return array(
++    'node' => array(
++      'bundles' => array(
++        'study_guide' => array(
++          'fields' => array('field_crocodoc')
++        )
++      )
++    )
++  );
++}
++
++// Update crocodoc file when entity insert, update.
++function crocodoc_entity_change($entity, $type) {
++  $crocodoc_info = crocodoc_info();
++  if (isset($entity->type) && isset($crocodoc_info[$type]) && in_array($entity->type, array_keys($crocodoc_info[$type]['bundles']))) {
++    foreach ($crocodoc_info[$type]['bundles'][$entity->type]['fields'] as $name) {
++      $entiy_wrapper = entity_metadata_wrapper($type, $entity);
++      if (!empty($entity->{$name})) {
++        $file = $entiy_wrapper->{$name}->value();
++        if ($file = file_load($file['fid'])) {
++          if (_crocodoc_get_uuid($file) === FALSE) {
++            crocodoc_push_document($file);
++          }
++        }
++      }
++    }
+   }
+ }
+ 
+@@ -159,26 +196,24 @@ function crocodoc_entity_insert($entity, $type) {
+  * Implements hook_entity_update().
+  */
+ function crocodoc_entity_update($entity, $type) {
++  crocodoc_entity_change($entity, $type);
++
+   if ($type == 'file') {
+ 
+     //@TODO do an entityfieldquery to determine if this entity belongs to a field being synced to crocodoc
+-
+     // if the file already has a crocodoc_uuid, add that to the queue for deletion
+-    $queue = DrupalQueue::get('crocodoc_queue', TRUE);
+-    if (isset($entity->crocodoc_uuid)) {
+-      $queue->createItem(array('task' => 'delete', 'file' => $entity));
+-      // now delete from the database
+-      $num_deleted = db_delete('crocodoc_files')
+-      ->condition('fid', $entity->fid)
+-      ->execute();
+-
+-      // Only resubmit if the uuid existed before:
+-      // crocodoc_push_document($entity);
+-    }
+-
+-    // now reuse the insert hook to add the new entity to the queue for addition
+-    // crocodoc_entity_insert($entity, $type);
+-
++//    $queue = DrupalQueue::get('crocodoc_queue', TRUE);
++//    $crocodoc_uuid = _crocodoc_get_uuid($entity);
++//    if ($crocodoc_uuid) {
++//      $queue->createItem(array('task' => 'delete', 'file' => $entity));
++//      // now delete from the database
++//      $num_deleted = db_delete('crocodoc_files')
++//              ->condition('fid', $entity->fid)
++//              ->execute();
++//    }
++//
++//    // now reuse the insert hook to add the new entity to the queue for addition
++//    crocodoc_push_document($entity);
+   }
+ }
+ 
+@@ -187,43 +222,15 @@ function crocodoc_entity_update($entity, $type) {
+  */
+ function crocodoc_entity_delete($entity, $type) {
+   if ($type == 'file') {
+-    if (isset($entity->crocodoc_uuid)) {
++    $crocodoc_uuid = _crocodoc_get_uuid($entity);
++    if ($crocodoc_uuid) {
+       $queue = DrupalQueue::get('crocodoc_delete', TRUE);
+       // add to the delete queue
+       $queue->createItem(array('task' => 'delete', 'file' => $entity));
+       // now delete from the database
+       $num_deleted = db_delete('crocodoc_files')
+-      ->condition('fid', $entity->fid)
+-      ->execute();
+-    }
+-  }
+-}
+-
+-/**
+- implements hook_entity_load
+- adds the crocodoc uuid value to file entities where available
+- **/
+-function crocodoc_entity_load($entities, $type) {
+-  if ($type == 'file') {
+-    //@TODO load uuid for all entities in one hit rather than one by one
+-    foreach ($entities as $entity) {
+-      if ($uuid = _crocodoc_get_uuid($entity)) {
+-        $entity->crocodoc_uuid = $uuid;
+-      }
+-    }
+-  }
+-}
+-
+-/**
+-implements hook_field_attach_load
+-**/
+-function crocodoc_field_attach_load($entity_type, $entities, $age, $options) {
+-  if ($entity_type == 'file') {
+-    //@TODO load uuid for all entities in one hit rather than one by one
+-    foreach ($entities as $entity) {
+-      if ($uuid = _crocodoc_get_uuid($entity)) {
+-        $entity->crocodoc_uuid = $uuid;
+-      }
++              ->condition('fid', $entity->fid)
++              ->execute();
+     }
+   }
+ }
+@@ -231,72 +238,65 @@ function crocodoc_field_attach_load($entity_type, $entities, $age, $options) {
+ /**
+   returns the crocodoc_uuid for the given file's fid
+   or FALSE if there is no uuid
+-**/
++ * */
+ function _crocodoc_get_uuid($entity) {
+   $fid = $entity->fid;
+   $result = db_select('crocodoc_files', 'cf')
+-  ->fields('cf', array('uuid'))
+-  ->condition('fid', $fid, '=')
+-  ->execute()
+-  ->fetchAssoc();
++          ->fields('cf', array('uuid'))
++          ->condition('fid', $fid, '=')
++          ->execute()
++          ->fetchAssoc();
+   if (isset($result['uuid'])) {
+     return $result['uuid'];
+   }
+   return FALSE;
+ }
+ 
++/**
++ * Check to see if a crocodoc instance already exists on the server
++ * @param type $nid 
++ */
++function _crocodoc_document_exists($fid) {
++  return db_query("select uuid from {crocodoc_files} a where fid=:fid", array(":fid"))->fetchField();
++}
+ 
+-function crocodoc_push_document($file, $nid = NULL) {
++function crocodoc_push_document($file) {
+   if (($library = libraries_load('crocodoc-php')) && !empty($library['loaded'])) {
+-    if ( _crocodoc_check_file_type($file) ) {
+-      $filePath = drupal_realpath($file->uri);
+-
+-      if (is_file($filePath)) {
+-        $fileHandle = fopen($filePath, 'r');
+-
+-        try {
+-          Crocodoc::setApiToken(variable_get('crocodoc_api_key', ''));
+-          $uuid = CrocodocDocument::upload($fileHandle);
+-          $crocodoc_file_record = db_insert('crocodoc_files')
+-          ->fields(array(
+-            'fid' => $file->fid,
+-            'uuid' => $uuid,
+-          ))
+-          ->execute();
+-
+-          // Clear the node cache so that the uuid is caught
+-          if ( $nid != NULL ) {
+-            cache_clear_all('field:node:' . $nid, 'cache_field');
+-          }
++    Crocodoc::setApiToken(variable_get('crocodoc_api_key', ''));
+ 
+-          // SUCCESS
+-          return $uuid;
++    $filePath = drupal_realpath($file->uri);
+ 
+-        } catch (CrocodocException $e) {
+-          watchdog('crocodoc', $e->getMessage(), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+-        }
+-      }
+-      else {
+-        //watchdog('crocodoc', t('File not found') , array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+-        // Not a file, let's use the URL perhaps (for cases like S3 hosted)
+-        if ($wrapper = file_stream_wrapper_get_instance_by_uri($file->uri)) {
+-          $url = $wrapper->getExternalUrl();
+-          return crocodoc_push_document_by_url($url);
+-        }
++    if (is_file($filePath)) {
++      $fileHandle = fopen($filePath, 'r');
++
++      try {
++        $uuid = CrocodocDocument::upload($fileHandle);
++
++        $crocodoc_file_record = db_insert('crocodoc_files')
++                ->fields(array(
++                  'fid' => $file->fid,
++                  'uuid' => $uuid,
++                ))
++                ->execute();
++
++        // SUCCESS
++        return $uuid;
++      } catch (CrocodocException $e) {
++        watchdog('crocodoc', $e->getMessage(), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+       }
++    } else {
++      watchdog('crocodoc', t('File not found'), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+     }
+-  }
+-  else {
+-    watchdog('crocodoc', t('Crocodoc library missing.') , array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
++  } else {
++    watchdog('crocodoc', t('Crocodoc library missing.'), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+   }
+ 
+   return false;
+-
+ }
+ 
+ /**
+-deletes a document from crocodoc, based on the uuid value
+-**/
++  deletes a document from crocodoc, based on the uuid value
++ * */
+ function crocodoc_delete_document($uuid) {
+   // delete file from crocodoc
+   if (($library = libraries_load('crocodoc-php')) && !empty($library['loaded'])) {
+@@ -307,26 +307,23 @@ function crocodoc_delete_document($uuid) {
+       if ($deleted) {
+         // success
+         return true;
+-      }
+-      else {
++      } else {
+         watchdog('crocodoc', t('Failed to delete document with uuid:'), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+       }
+     } catch (CrocodocException $e) {
+ 
+       watchdog('crocodoc', $e->getMessage() . ' ' . $uuid, array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+     }
+-  }
+-  else {
+-    watchdog('crocodoc', t('Crocodoc library missing.') , array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
++  } else {
++    watchdog('crocodoc', t('Crocodoc library missing.'), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+   }
+ 
+   return false;
+-
+ }
+ 
+-
+ function crocodoc_get_file_session_key($crocodoc_uuid, $settings) {
+   global $user;
++
+   //create a crocodoc session for this crocodoc_uuid
+ 
+   if (($library = libraries_load('crocodoc-php')) && !empty($library['loaded'])) {
+@@ -336,40 +333,56 @@ function crocodoc_get_file_session_key($crocodoc_uuid, $settings) {
+     $cache_key = 'cuuid:' . $crocodoc_uuid . ';uid:' . $user->uid;
+     $cached_session_key = cache_get($cache_key);
+ 
+-    if ( $cached_session_key ) {
++    if ($cached_session_key) {
+       return $cached_session_key->data;
+-    }
+-    else {
++    } else {
+       Crocodoc::setApiToken(variable_get('crocodoc_api_key', ''));
+ 
++      if (isset($settings['filter'])) {
++        $filter = $settings['filter'];
++      } else {
++        //Get all admin and tutor uids
++        $administrator_rid = array_search('administrator', user_roles());
++        $tutor_rid = array_search('Tutor', user_roles());
++        $result = db_query("select uid from users_roles where rid in (:rid)", array(":rid" => array($administrator_rid, $tutor_rid)))->fetchAllAssoc('uid');
++        $uids = array_keys($result);
++        if (empty($uids)) {
++          $uids = array();
++        }
++        $uids[] = 1;
++
++        //Get student id
++        $uids[] = $user->uid;
++        
++        $filter = implode(",", $uids);
++      }
++
+       try {
+         $session_key = CrocodocSession::create($crocodoc_uuid, array(
+-          'isEditable' => ($user->uid == 0) ? 0 : $settings['allow_annotations'],
+-          'user' => array(
+-            'id' => $user->uid,
+-            'name' => ($user->uid ==0) ? 'Anonymous' : $user->name,
+-          ),
+-          'filter' => isset($settings['filter']) ? $settings['filter'] : 'all',
+-          'isAdmin' => $settings['is_admin'],
+-          'isDownloadable' => $settings['downloadable'],
+-          'isCopyprotected' => $settings['copy_protected'],
+-          'isDemo' => $settings['discard_annotations'],
+-          'sidebar' => $settings['sidebar'],
+-        ));
++                  'isEditable' => $settings['allow_annotations'],
++                  'user' => array(
++                    'id' => $user->uid,
++                    'name' => $user->name,
++                  ),
++                  'filter' => $filter,
++                  'isAdmin' => $settings['is_admin'],
++                  'isDownloadable' => $settings['downloadable'],
++                  'isCopyprotected' => $settings['copy_protected'],
++                  'isDemo' => $settings['discard_annotations'],
++                  'sidebar' => $settings['sidebar'],
++                ));
+ 
+         // Set session key in cache
+         // Expire after 55min since Crocodoc sessions last 60min
+-        cache_set($cache_key, $session_key, 'cache', (time() + (55*60)));
++        cache_set($cache_key, $session_key, 'cache', (time() + (55 * 60)));
+ 
+         return $session_key;
+-
+       } catch (CrocodocException $e) {
+         watchdog('crocodoc', $e->getMessage(), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+       }
+     }
+-  }
+-  else {
+-    watchdog('crocodoc', t('Crocodoc library missing.') , array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
++  } else {
++    watchdog('crocodoc', t('Crocodoc library missing.'), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+   }
+ 
+   return false;
+@@ -377,7 +390,7 @@ function crocodoc_get_file_session_key($crocodoc_uuid, $settings) {
+ 
+ /**
+  * This method pushes a document by a URL to crocodoc and returns the UUID for the file or FALSE on failure
+-**/
++ * */
+ function crocodoc_push_document_by_url($url) {
+   if (($library = libraries_load('crocodoc-php')) && !empty($library['loaded'])) {
+     Crocodoc::setApiToken(variable_get('crocodoc_api_key', ''));
+@@ -387,34 +400,13 @@ function crocodoc_push_document_by_url($url) {
+ 
+       // SUCCESS
+       return $uuid;
+-
+     } catch (CrocodocException $e) {
+       watchdog('crocodoc', $e->getMessage(), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+     }
+-  }
+-  else {
+-    watchdog('crocodoc', t('Crocodoc library missing.') , array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
++  } else {
++    watchdog('crocodoc', t('Crocodoc library missing.'), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+   }
+ 
+   return false;
+ }
+ 
+-/**
+- * This method retrieves the extracted text of a uuid
+-**/
+-function crocodoc_retrieve_extracted_text($uuid) {
+-  if (($library = libraries_load('crocodoc-php')) && !empty($library['loaded'])) {
+-    Crocodoc::setApiToken(variable_get('crocodoc_api_key', ''));
+-    try {
+-	    $text = CrocodocDownload::text($uuid);
+-      return $text;
+-    } catch (CrocodocException $e) {
+-      watchdog('crocodoc', $e->getMessage(), array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+-      return false;
+-    }
+-  }
+-  else {
+-    watchdog('crocodoc', t('Crocodoc library missing.') , array(), WATCHDOG_ERROR, 'admin/reports/dblog/crocodoc');
+-  }
+-}
+-
+diff --git a/crocodoc_cron_queue.inc b/crocodoc_cron_queue.inc
+index 3087281..6cf2116 100644
+--- a/crocodoc_cron_queue.inc
++++ b/crocodoc_cron_queue.inc
+@@ -13,6 +13,7 @@ function crocodoc_cron_queue_info() {
+   return $queues;
+ }
+ 
++
+ function crocodoc_process_queue_item($queue_item) {
+   switch($queue_item['task']) {
+     case 'push':
+@@ -22,8 +23,5 @@ function crocodoc_process_queue_item($queue_item) {
+       $uuid = $queue_item['file']->crocodoc_uuid;
+       crocodoc_delete_document($uuid);
+     break;
+-    case 'delete_by_uuid':
+-      crocodoc_delete_document($queue_item['uuid']);
+-    break;
+   }
+-}
++}
+\ No newline at end of file
+diff --git a/crocodoc_formatter.inc b/crocodoc_formatter.inc
+index 83e75e8..ea01b57 100644
+--- a/crocodoc_formatter.inc
++++ b/crocodoc_formatter.inc
+@@ -1,8 +1,8 @@
+ <?php
+ 
+ /**
+-* implements hook_field_formatter_info
+-**/
++ * implements hook_field_formatter_info
++ * */
+ function crocodoc_field_formatter_info() {
+   // @TODO: Provide other formatters such as modal, thumbnail or link etc
+   return array(
+@@ -10,45 +10,40 @@ function crocodoc_field_formatter_info() {
+       'label' => t('Crocodoc IFrame'),
+       'field types' => array('file', 'text'),
+       'settings' => array(
+-        'frame_width' => '100%',
+-        'frame_height' => '800px',
++        'frame_width' => 800,
++        'frame_height' => 800,
+         'allow_annotations' => 1,
+         'discard_annotations' => 0,
+         'downloadable' => 1,
+         'copy_protected' => 0,
+         'sidebar' => 'auto',
+-//        'copy_text' => ''
+       ),
+     ),
+   );
+ }
+ 
+ /**
+-* implements hook_field_formatter_settings_summary
+-**/
++ * implements hook_field_formatter_settings_summary
++ * */
+ function crocodoc_field_formatter_settings_summary($field, $instance, $view_mode) {
+   $display = $instance['display'][$view_mode];
+   $settings = $display['settings'];
+ 
+   $summary_text = '';
+ 
+-  if ($display['type'] == 'crocodoc_iframe' ) {
++  if ($display['type'] == 'crocodoc_iframe') {
+     $summary = array();
+-    $summary[] = $settings['frame_width'] . ' X ' . $settings['frame_height'];
+-    if ( $settings['allow_annotations'] ) {
++    $summary[] = $settings['frame_width'] . 'px X ' . $settings['frame_height'] . 'px';
++    if ($settings['allow_annotations']) {
+       $annotations = t('Annotations');
+-      if ( $settings['discard_annotations'] )
++      if ($settings['discard_annotations'])
+         $annotations .= t(' discarded');
+       $summary[] = $annotations;
+     }
+-    if ( $settings['downloadable'] )
+-      $summary[] = t('Downloadable');
+-    if ( $settings['copy_protected'] )
+-      $summary[] = t('Copy Protected');
+-/*
+-    if ( !empty($settings['copy_text']) )
+-      $summary[] = t('Copy text into %field', array('%field' => $settings['copy_text']));
+-*/
++    if ($settings['downloadable'])
++      $summary[] = t(' Downloadable');
++    if ($settings['copy_protected'])
++      $summary[] = t(' Copy Protected');
+ 
+     $summary_text = '<ul><li>' . implode('</li><li>', $summary) . '</li></ul>';
+   }
+@@ -57,27 +52,29 @@ function crocodoc_field_formatter_settings_summary($field, $instance, $view_mode
+ }
+ 
+ /**
+-* implements hook_field_formatter_settings_form
+-**/
++ * implements hook_field_formatter_settings_form
++ * */
+ function crocodoc_field_formatter_settings_form($field, $instance, $view_mode, &$form, &$form_state) {
+   $display = $instance['display'][$view_mode];
+   $settings = $display['settings'];
+ 
+   $element = array();
+ 
+-  if ($display['type'] == 'crocodoc_iframe' ) {
++  if ($display['type'] == 'crocodoc_iframe') {
+     $element['frame_width'] = array(
+       '#title' => t('Frame Width'),
+       '#type' => 'textfield',
+       '#default_value' => $settings['frame_width'],
+-      '#description' => t('Set the width of the Iframe and units (eg 100% or 300px).'),
++      '#description' => t('Set the width of the Iframe (pixels).'),
++      '#element_validate' => array('_element_validate_integer_positive'),
+       '#size' => 4,
+     );
+     $element['frame_height'] = array(
+       '#title' => t('Frame Height'),
+       '#type' => 'textfield',
+       '#default_value' => $settings['frame_height'],
+-      '#description' => t('Set the height of the Iframe and units (eg 100% or 300px).'),
++      '#description' => t('Set the height of the Iframe (pixels).'),
++      '#element_validate' => array('_element_validate_integer_positive'),
+       '#size' => 4,
+     );
+     $element['allow_annotations'] = array(
+@@ -116,54 +113,44 @@ function crocodoc_field_formatter_settings_form($field, $instance, $view_mode, &
+         'auto' => t('Auto - open if annotations exist'),
+       ),
+     );
+-/*
+-    $element['copy_text'] = array(
+-      '#title' => t('Copy text into'),
+-      '#type' => 'textfield',
+-      '#default_value' => $settings['copy_text'],
+-      '#description' => t('Optionally have the extracted text of the document copied into another field in this node. Please enter the field name such as "field_document_text". (todo: make part of file entity and/or select list)'),
+-    );
+-*/
+   }
+ 
+-
+   return $element;
+ }
+ 
+ /*
+  * Implements hook_form_alter
+  */
++
+ function crocodoc_form_alter($form, &$form_state) {
+-  if ( $form['#form_id'] == 'field_ui_display_overview_form' ) {
++  if ($form['#form_id'] == 'field_ui_display_overview_form') {
+     $form['#submit'][] = 'crocodoc_field_formatter_settings_form_submit';
+   }
+ }
+ 
+ /* Submission of settings */
++
+ function crocodoc_field_formatter_settings_form_submit($form, &$form_state) {
+   // Clear the cache!
+   cache_clear_all('cuuid:*', 'cache', true);
+ }
+ 
+ /**
+-* implements hook_field_formatter_view
+-**/
++ * implements hook_field_formatter_view
++ * */
+ function crocodoc_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+   $element = array();
+ 
+   switch ($display['type']) {
+     case 'crocodoc_iframe':
+       foreach ($items as $delta => $item) {
+-
+-        // allow other modules to alter the settingss
+-        $settings = $display['settings'];
+-        $context = array('entity_type' => $entity_type, 'entity' => $entity, 'field' => $field);
+-        drupal_alter('crocodoc_settings_alter', $settings, $context);
++        $item = (object) $item;
++        $item->crocodoc_uuid = _crocodoc_get_uuid($item);
+ 
+         $element[$delta] = array(
+           '#theme' => 'crocodoc_iframe_display',
+           '#item' => (object) $item,
+-          '#settings' => $settings,
++          '#settings' => $display['settings'],
+           '#entity' => $entity,
+           '#field' => $field,
+         );
+@@ -174,8 +161,8 @@ function crocodoc_field_formatter_view($entity_type, $entity, $field, $instance,
+ }
+ 
+ /**
+-* implements hook_theme
+-**/
++ * implements hook_theme
++ * */
+ function crocodoc_theme() {
+   return array(
+     'crocodoc_iframe_display' => array(
+@@ -189,33 +176,43 @@ function crocodoc_theme() {
+   );
+ }
+ 
+-
+ function theme_crocodoc_iframe_display($variables) {
+   $crocodoc_uuid = NULL;
+-
+   $item = $variables['item'];
+   $field = $variables['field'];
+   if ($field['type'] == 'file') {
+     if (isset($item->crocodoc_uuid)) {
+       $crocodoc_uuid = $item->crocodoc_uuid;
+     }
+-    else {
+-      $crocodoc_uuid = crocodoc_push_document($item, $variables['entity']->nid);
+-    }
+-  }
+-  else if ($field['type'] == 'text') {
++  } else if ($field['type'] == 'text') {
+     $crocodoc_uuid = $item->value;
+   }
+ 
+   $settings = $variables['settings'];
+   $settings['is_admin'] = node_access('update', $variables['entity']);
+ 
+-  if ($crocodoc_uuid != NULL && $crocodoc_uuid != false ) {
++  if ($crocodoc_uuid != NULL) {
+     if ($session_key = crocodoc_get_file_session_key($crocodoc_uuid, $settings)) {
+-      return '<iframe src="https://crocodoc.com/view/' . $session_key . '" width="' . $settings['frame_width'] . '" height="' . $settings['frame_height'] . '"></iframe>';
++      $id = 'crocodoc-'.rand(0,10000);
++      
++      $content = '<iframe class="crocodoc-iframe" id="'.$id.'" src="https://crocodoc.com/view/' . $session_key . '" width="100%" height="100%" allowFullScreen></iframe>';
++      
++      if($path = libraries_get_path('fullscreen')){
++        drupal_add_js($path.'/fullscreen.js');
++        $content .= "<button class='crocodoc-fullscreen-btn fullscreen-btn' onclick=\"goFullscreen('$id'); return false\">Go Full Screen</button>";
++      }
++      
++      return $content;
+     }
+   }
+ 
++
+   return '<div class="crocodoc-fail">' . t('Unable to load document') . '</div>';
+ }
+ 
++function crocodoc_field_widget_info_alter(&$info) {
++  $info['file_generic']['settings'] += array(
++    'crocodoc' => FALSE,
++  );
++}
++
+-- 
+1.9.1
+
