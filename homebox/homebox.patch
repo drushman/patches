@@ -1,0 +1,29 @@
+diff --git a/homebox.js b/homebox.js
+index 86d5388..1e08ac7 100644
+--- a/homebox.js
++++ b/homebox.js
+@@ -119,6 +119,7 @@
+         // Show the save button
+         $('#homebox-save-form .form-submit').show();
+         $('#homebox-minimize-to-save').hide();
++        $('#homebox-minimize-to-save').removeClass('is-maximize-box');
+ 
+         // Restore the checkbox under "Edit Content"
+         $('input#homebox_toggle_' + $(portlet).attr('id')).removeAttr('disabled');
+@@ -142,6 +143,7 @@
+         // Hide the save button
+         $('#homebox-save-form .form-submit').hide();
+         $('#homebox-minimize-to-save').show();
++        $('#homebox-minimize-to-save').addClass('is-maximize-box');
+ 
+         // Disable the checkbox under "Edit content"
+         $('input#homebox_toggle_' + $(portlet).attr('id')).attr('disabled', 'disabled');
+@@ -150,7 +152,7 @@
+   };
+ 
+   Drupal.homebox.pageChanged = function () {
+-    if (Drupal.homebox.$page.hasClass('homebox-auto-save')) {
++    if (Drupal.homebox.$page.hasClass('homebox-auto-save') && $('#homebox-minimize-to-save').hasClass('is-maximize-box') === false) {
+       Drupal.homebox.$pageSave.mousedown().click();
+     }
+     else {
